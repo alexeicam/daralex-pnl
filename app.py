@@ -7,7 +7,12 @@ import logging
 # Import our enhanced calculator
 try:
     from pnl_calculator import EnhancedVegetableOilCalculator, EnhancedPnLResult
-    from hubspot_integration import display_hubspot_status, add_hubspot_save_option
+    from hubspot_integration import (
+        display_hubspot_status,
+        render_deal_tracking_section,
+        render_deals_log,
+        StreamlitHubSpotIntegration
+    )
     ENHANCED_MODE = True
 except ImportError:
     ENHANCED_MODE = False
@@ -409,9 +414,19 @@ def main():
                         with col_s3:
                             st.write(f"{item['margin_pct']:.1f}% margin")
 
-            # HubSpot integration
-            if ENHANCED_MODE:
-                add_hubspot_save_option(result.to_dict(), st.session_state.last_params)
+        # Deal Tracking Section (Enhanced Mode)
+        if enhanced and ENHANCED_MODE:
+            st.markdown("---")
+            st.markdown("### 💼 Deal Tracking")
+
+            # Render deal tracking interface
+            render_deal_tracking_section(result.to_dict(), st.session_state.last_params)
+
+    # Recent Deals Log (Always show if HubSpot is available)
+    if ENHANCED_MODE:
+        st.markdown("---")
+        st.markdown("### 📊 Recent Deals")
+        render_deals_log(StreamlitHubSpotIntegration())
 
 if __name__ == "__main__":
     main()
