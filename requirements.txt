@@ -1,2 +1,11 @@
 streamlit==1.29.0
 requests==2.31.0
+
+# Enhanced P&L Calculator Dependencies
+python-dotenv>=1.0.0
+
+# Data processing
+pandas>=2.0.0
+
+# Optional: For future enhancements
+# hubspot-api-client>=7.0.0
