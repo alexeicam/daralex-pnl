@@ -127,8 +127,7 @@ class StreamlitHubSpotIntegration:
         try:
             url = f"{self.base_url}/crm/v3/objects/contacts"
             params = {
-                "limit": limit,
-                "properties": "firstname,lastname,email"
+                "limit": limit
             }
 
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
@@ -170,6 +169,13 @@ class StreamlitHubSpotIntegration:
 
         except Exception as e:
             st.error(f"Error fetching contacts: {str(e)}")
+            # Show more debug info
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    st.error(f"API Error Details: {error_detail}")
+                except:
+                    st.error(f"Response Text: {e.response.text}")
             return []
 
     def create_company(self, company_name: str, country: str = "Unknown") -> Optional[str]:
