@@ -118,7 +118,7 @@ def render_sidebar():
         st.markdown("### 🎯 Enhanced Features")
 
         # Language selector (keeping your existing feature)
-        lang = st.selectbox("🌐 Language / Limba", ["en", "ro"], key="lang")
+        lang = st.selectbox("🌐 Language / Limba", ["en", "ro"], index=1, key="lang")
 
         # HubSpot integration status
         if ENHANCED_MODE:
