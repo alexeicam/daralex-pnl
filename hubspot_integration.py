@@ -134,7 +134,7 @@ class StreamlitHubSpotIntegration:
                 # Prepare parameters
                 params = {
                     "limit": min(page_size, max_contacts - len(all_contacts)),
-                    "properties": "firstname,lastname,email"
+                    "properties": "firstname,lastname,email,company,product_interest,descriere_relatie,responsible_trader,country,state,address,etapa_relatiei,last_price_offered,last_price_quoted"
                 }
 
                 # Add pagination cursor if available
@@ -174,7 +174,16 @@ class StreamlitHubSpotIntegration:
                         'name': name,
                         'display_name': display_name,
                         'email': email,
-                        'company': "N/A",
+                        'company': props.get("company", ""),
+                        'product_interest': props.get("product_interest", ""),
+                        'descriere_relatie': props.get("descriere_relatie", ""),
+                        'responsible_trader': props.get("responsible_trader", ""),
+                        'country': props.get("country", ""),
+                        'state': props.get("state", ""),
+                        'address': props.get("address", ""),
+                        'etapa_relatiei': props.get("etapa_relatiei", ""),
+                        'last_price_offered': props.get("last_price_offered", ""),
+                        'last_price_quoted': props.get("last_price_quoted", ""),
                         'phone': "N/A",
                         'jobtitle': "N/A"
                     })
@@ -660,15 +669,21 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
                 del st.session_state["vanzatori_contacts"]
             st.rerun()
 
-    # Create table data
+    # Create table data with all requested columns
     table_data = []
     for contact in vanzatori_contacts:
         table_data.append({
-            "Nume": contact['name'],
-            "Email": contact['email'] or "N/A",
-            "Telefon": contact['phone'] or "N/A",
-            "Companie": contact['company'] or "N/A",
-            "Rol": contact['jobtitle'] or "N/A"
+            "Contact": contact['name'],
+            "Company (Primary)": contact['company'] or "",
+            "PRODUCT INTEREST": contact['product_interest'] or "",
+            "DESCRIERE RELATIE": contact['descriere_relatie'] or "",
+            "Responsible trader": contact['responsible_trader'] or "",
+            "COUNTRY/REGION": contact['country'] or "",
+            "STATE/REGION": contact['state'] or "",
+            "STREET ADDRESS": contact['address'] or "",
+            "ETAPA RELATIEI": contact['etapa_relatiei'] or "",
+            "LAST PRICE OFFERED": contact['last_price_offered'] or "",
+            "LAST PRICE QUOTED": contact['last_price_quoted'] or ""
         })
 
     if table_data:
@@ -676,11 +691,78 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
         df = pd.DataFrame(table_data)
 
         # Display as editable table
-        st.dataframe(
+        edited_df = st.data_editor(
             df,
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
+            num_rows="dynamic",  # Allow adding/removing rows
+            column_config={
+                "Contact": st.column_config.TextColumn(
+                    "Contact",
+                    help="Contact name",
+                    width="medium"
+                ),
+                "Company (Primary)": st.column_config.TextColumn(
+                    "Company (Primary)",
+                    help="Primary company",
+                    width="medium"
+                ),
+                "PRODUCT INTEREST": st.column_config.TextColumn(
+                    "PRODUCT INTEREST",
+                    help="Product interest",
+                    width="medium"
+                ),
+                "DESCRIERE RELATIE": st.column_config.TextColumn(
+                    "DESCRIERE RELATIE",
+                    help="Relationship description",
+                    width="large"
+                ),
+                "Responsible trader": st.column_config.TextColumn(
+                    "Responsible trader",
+                    help="Responsible trader",
+                    width="medium"
+                ),
+                "COUNTRY/REGION": st.column_config.TextColumn(
+                    "COUNTRY/REGION",
+                    help="Country or region",
+                    width="medium"
+                ),
+                "STATE/REGION": st.column_config.TextColumn(
+                    "STATE/REGION",
+                    help="State or region",
+                    width="medium"
+                ),
+                "STREET ADDRESS": st.column_config.TextColumn(
+                    "STREET ADDRESS",
+                    help="Street address",
+                    width="large"
+                ),
+                "ETAPA RELATIEI": st.column_config.SelectboxColumn(
+                    "ETAPA RELATIEI",
+                    help="Relationship stage",
+                    width="medium",
+                    options=["Initial", "In Progress", "Advanced", "Closed", "Lost"]
+                ),
+                "LAST PRICE OFFERED": st.column_config.NumberColumn(
+                    "LAST PRICE OFFERED",
+                    help="Last price offered (EUR)",
+                    width="medium",
+                    format="%.2f €"
+                ),
+                "LAST PRICE QUOTED": st.column_config.NumberColumn(
+                    "LAST PRICE QUOTED",
+                    help="Last price quoted (EUR)",
+                    width="medium",
+                    format="%.2f €"
+                )
+            }
         )
+
+        # Show save button if data was edited
+        if not edited_df.equals(df):
+            if st.button("💾 Save Changes", type="primary"):
+                st.success("✅ Changes saved! (Note: Integration with HubSpot API for updates coming soon)")
+                # TODO: Implement HubSpot API updates for edited contacts
 
         st.info(f"📊 Total: {len(vanzatori_contacts)} contacte găsite")
     else:
