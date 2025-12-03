@@ -64,6 +64,20 @@ TRANSLATIONS = {
         "your_price": "Your Price (EUR/t)",
         "your_profit": "Your Profit/t",
         "price_truck": "Price per Truck (24t)",
+        "deal_tracking": "Deal Tracking",
+        "recent_deals": "Recent Deals",
+        "product_type": "Product Type",
+        "select_buyer": "Select Buyer",
+        "select_seller": "Select Seller",
+        "deal_name": "Deal Name",
+        "save_deal": "💾 Save Deal to HubSpot",
+        "refresh_companies": "🔄 Refresh Companies",
+        "add_new_company": "➕ Add New Company",
+        "new_buyer_name": "New Buyer Name",
+        "new_seller_name": "New Seller Name",
+        "country": "Country",
+        "create_buyer": "Create Buyer",
+        "create_seller": "Create Seller",
     },
     "ro": {
         "title": "🌻 DARALEX Calculator P&L",
@@ -97,6 +111,20 @@ TRANSLATIONS = {
         "your_price": "Prețul Tău (EUR/t)",
         "your_profit": "Profitul Tău/t",
         "price_truck": "Preț per Camion (24t)",
+        "deal_tracking": "Urmărire Tranzacții",
+        "recent_deals": "Tranzacții Recente",
+        "product_type": "Tip Produs",
+        "select_buyer": "Selectează Cumpărător",
+        "select_seller": "Selectează Vânzător",
+        "deal_name": "Nume Tranzacție",
+        "save_deal": "💾 Salvează în HubSpot",
+        "refresh_companies": "🔄 Reîmprospătează Companii",
+        "add_new_company": "➕ Adaugă Companie Nouă",
+        "new_buyer_name": "Nume Cumpărător Nou",
+        "new_seller_name": "Nume Vânzător Nou",
+        "country": "Țară",
+        "create_buyer": "Creează Cumpărător",
+        "create_seller": "Creează Vânzător",
     }
 }
 
@@ -421,15 +449,15 @@ def main():
         # Deal Tracking Section (Enhanced Mode)
         if enhanced and ENHANCED_MODE:
             st.markdown("---")
-            st.markdown("### 💼 Deal Tracking")
+            st.markdown(f"### 💼 {t['deal_tracking']}")
 
             # Render deal tracking interface
-            render_deal_tracking_section(result.to_dict(), st.session_state.last_params)
+            render_deal_tracking_section(result.to_dict(), st.session_state.last_params, t)
 
     # Recent Deals Log (Always show if HubSpot is available)
     if ENHANCED_MODE:
         st.markdown("---")
-        st.markdown("### 📊 Recent Deals")
+        st.markdown(f"### 📊 {t['recent_deals']}")
         render_deals_log(StreamlitHubSpotIntegration())
 
 if __name__ == "__main__":

@@ -427,7 +427,7 @@ def display_hubspot_status():
             st.info("Add HUBSPOT_ACCESS_TOKEN to secrets")
             return False
 
-def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSpotIntegration) -> Optional[str]:
+def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = None) -> Optional[str]:
     """
     Render company selector with 'Add New' option
     """
@@ -443,31 +443,35 @@ def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
 
     companies = st.session_state[f"{key_prefix}_companies"]
 
+    # Use translations if available
+    if not t:
+        t = {"add_new_company": "➕ Add New Company", "country": "Country"}
+
     # Prepare options
-    company_options = ["➕ Add New Company"] + [f"{comp['name']} ({comp['country']})" for comp in companies]
+    company_options = [t.get("add_new_company", "➕ Add New Company")] + [f"{comp['name']} ({comp['country']})" for comp in companies]
 
     selected = st.selectbox(
-        f"Select {label}",
+        label,
         options=company_options,
         key=f"{key_prefix}_selector"
     )
 
-    if selected == "➕ Add New Company":
+    if selected == t.get("add_new_company", "➕ Add New Company"):
         # Show input for new company
         new_company_name = st.text_input(
-            f"New {label} Name",
+            t.get(f"new_{key_prefix}_name", f"New {label} Name"),
             key=f"{key_prefix}_new_name",
             placeholder="Enter company name..."
         )
 
         new_company_country = st.selectbox(
-            "Country",
+            t.get("country", "Country"),
             ["Ukraine", "Romania", "Moldova", "Greece", "Poland", "Bulgaria", "Serbia", "Other"],
             key=f"{key_prefix}_country"
         )
 
         if new_company_name:
-            if st.button(f"Create {label}", key=f"{key_prefix}_create"):
+            if st.button(t.get(f"create_{key_prefix}", f"Create {label}"), key=f"{key_prefix}_create"):
                 company_id = hubspot.create_company(new_company_name, new_company_country)
                 if company_id:
                     # Refresh companies list
@@ -483,7 +487,7 @@ def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
                 return comp['id']
         return None
 
-def render_product_selector() -> str:
+def render_product_selector(t: Dict[str, str] = None) -> str:
     """
     Render product dropdown selector
     """
@@ -495,36 +499,49 @@ def render_product_selector() -> str:
         "Soybean Oil Crude"
     ]
 
+    if not t:
+        t = {"product_type": "🌻 Product Type"}
+
     return st.selectbox(
-        "🌻 Product Type",
+        t.get("product_type", "🌻 Product Type"),
         products,
         key="product_selector"
     )
 
 def render_deal_tracking_section(calculation_result: Dict[str, Any],
-                                calculation_params: Dict[str, Any]):
+                                calculation_params: Dict[str, Any],
+                                t: Dict[str, str] = None):
     """
     Render the enhanced deal tracking section
     """
     hubspot = StreamlitHubSpotIntegration()
 
+    if not t:
+        t = {
+            "deal_tracking": "Deal Tracking",
+            "product_type": "🌻 Product Type",
+            "select_buyer": "Select Buyer",
+            "select_seller": "Select Seller",
+            "deal_name": "Deal Name",
+            "save_deal": "💾 Save Deal to HubSpot",
+            "refresh_companies": "🔄 Refresh Companies"
+        }
+
     if not hubspot.is_connected:
         st.info("💡 Connect HubSpot to enable deal tracking")
         return
 
-    st.markdown("### 💼 Deal Tracking")
-
     # Product selection
-    product = render_product_selector()
+    product = render_product_selector(t)
 
     # Company selection
     col_buyer, col_seller = st.columns(2)
 
     with col_buyer:
-        buyer_id = render_company_selector("Buyer", "buyer", hubspot)
+        buyer_id = render_company_selector(t.get("select_buyer", "Select Buyer"), "buyer", hubspot, t)
 
     with col_seller:
-        seller_id = render_company_selector("Seller", "seller", hubspot)
+        seller_id = render_company_selector(t.get("select_seller", "Select Seller"), "seller", hubspot, t)
 
     # Deal creation
     deal_name_default = ""
@@ -535,7 +552,7 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
         deal_name_default = f"{product} - {seller_name} → {buyer_name} - {quantity:.0f}t"
 
     deal_name = st.text_input(
-        "Deal Name",
+        t.get("deal_name", "Deal Name"),
         value=deal_name_default,
         key="deal_tracking_name"
     )
@@ -543,7 +560,7 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
     col_save, col_refresh = st.columns(2)
 
     with col_save:
-        if st.button("💾 Save Deal to HubSpot", key="save_deal_tracking", type="primary"):
+        if st.button(t.get("save_deal", "💾 Save Deal to HubSpot"), key="save_deal_tracking", type="primary"):
             if deal_name and product:
                 deal_id = hubspot.create_deal_with_associations(
                     deal_name=deal_name,
@@ -562,7 +579,7 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
                 st.warning("Please select product and enter deal name")
 
     with col_refresh:
-        if st.button("🔄 Refresh Companies", key="refresh_companies"):
+        if st.button(t.get("refresh_companies", "🔄 Refresh Companies"), key="refresh_companies"):
             # Clear cached companies
             keys_to_clear = [k for k in st.session_state.keys() if "_companies" in k]
             for key in keys_to_clear:
