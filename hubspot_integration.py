@@ -134,7 +134,7 @@ class StreamlitHubSpotIntegration:
                 # Prepare parameters
                 params = {
                     "limit": min(page_size, max_contacts - len(all_contacts)),
-                    "properties": "firstname,lastname,email,company"
+                    "properties": "firstname,lastname,email,company,phone"
                 }
 
                 # Add pagination cursor if available
@@ -175,6 +175,7 @@ class StreamlitHubSpotIntegration:
                         'display_name': display_name,
                         'email': email,
                         'company': props.get("company", ""),
+                        'phone': props.get("phone", ""),
                         # Placeholder columns for future custom properties
                         'product_interest': "",
                         'descriere_relatie': "",
@@ -619,10 +620,24 @@ def render_contact_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
     if selected == "Select Contact":
         return None
     else:
-        # Find selected contact ID
+        # Find selected contact and display information
+        selected_contact = None
         for contact in contacts:
             if contact['display_name'] == selected:
-                return contact['id']
+                selected_contact = contact
+                break
+
+        if selected_contact:
+            # Display contact information
+            st.markdown(f"**📧 Email:** {selected_contact['email'] or 'Not provided'}")
+            st.markdown(f"**🏢 Company:** {selected_contact['company'] or 'Not provided'}")
+            if selected_contact['phone']:
+                st.markdown(f"**📞 Phone:** {selected_contact['phone']}")
+            else:
+                st.markdown(f"**📞 Phone:** Not provided")
+
+            return selected_contact['id']
+
         return None
 
 
