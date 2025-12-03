@@ -187,23 +187,33 @@ class StreamlitHubSpotIntegration:
                 product, calculation_result, calculation_params, deal_type
             )
 
-            # Prepare deal properties - using only standard HubSpot properties
+            # Prepare deal properties - using only essential HubSpot properties
             deal_properties = {
                 "dealname": deal_name,
-                "amount": str(contract_value),
-                "dealstage": "appointmentscheduled",
-                "pipeline": "default",
-                "hs_deal_stage_probability": "0.2",
-                "closedate": (datetime.now() + timedelta(days=30)).isoformat()
+                "amount": str(int(contract_value))  # Ensure integer amount
             }
 
             # Add description with all our custom data
-            deal_properties["description"] = description
+            if description:
+                deal_properties["description"] = description
 
             payload = {"properties": deal_properties}
 
             response = requests.post(url, headers=self.headers, json=payload, timeout=15)
-            response.raise_for_status()
+
+            if response.status_code != 201:
+                # Show detailed error for debugging
+                error_detail = ""
+                try:
+                    error_data = response.json()
+                    if "message" in error_data:
+                        error_detail = f": {error_data['message']}"
+                    elif "errors" in error_data:
+                        error_detail = f": {error_data['errors']}"
+                except:
+                    error_detail = f": {response.text}"
+                st.error(f"❌ Error creating deal (Status {response.status_code}){error_detail}")
+                return None
 
             deal = response.json()
             deal_id = deal.get("id")
@@ -626,25 +636,25 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
             date_str = "Unknown"
 
         # Extract data from description if available
-        description = props.get("description", "")
+        description = props.get("description", "") or ""
         product = "N/A"
         quantity = "N/A"
         profit = "N/A"
 
         # Simple parsing of description for display
-        if "Product:" in description:
+        if description and "Product:" in description:
             try:
                 product = description.split("Product: ")[1].split("\n")[0]
             except:
                 pass
 
-        if "Quantity:" in description:
+        if description and "Quantity:" in description:
             try:
                 quantity = description.split("Quantity: ")[1].split(" tons")[0] + "t"
             except:
                 pass
 
-        if "Total Profit:" in description:
+        if description and "Total Profit:" in description:
             try:
                 profit = description.split("Total Profit: ")[1].split("\n")[0]
             except:
