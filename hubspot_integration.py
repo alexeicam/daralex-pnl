@@ -117,7 +117,7 @@ class StreamlitHubSpotIntegration:
             st.error(f"Error fetching companies: {str(e)}")
             return []
 
-    def get_contacts(self, limit: int = 500) -> List[Dict[str, Any]]:
+    def get_contacts(self, limit: int = 100) -> List[Dict[str, Any]]:
         """
         Fetch contacts from HubSpot for buyer/seller selection
         """
@@ -127,7 +127,8 @@ class StreamlitHubSpotIntegration:
         try:
             url = f"{self.base_url}/crm/v3/objects/contacts"
             params = {
-                "limit": limit
+                "limit": limit,
+                "properties": "firstname,lastname,email"
             }
 
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
