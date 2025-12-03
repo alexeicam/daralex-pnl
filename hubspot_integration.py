@@ -128,7 +128,7 @@ class StreamlitHubSpotIntegration:
             url = f"{self.base_url}/crm/v3/objects/contacts"
             params = {
                 "limit": limit,
-                "properties": "firstname,lastname,email,company,phone,jobtitle"
+                "properties": "firstname,lastname,email"
             }
 
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
@@ -146,7 +146,6 @@ class StreamlitHubSpotIntegration:
                 first_name = props.get("firstname", "")
                 last_name = props.get("lastname", "")
                 email = props.get("email", "")
-                company = props.get("company", "")
 
                 if first_name or last_name:
                     name = f"{first_name} {last_name}".strip()
@@ -155,20 +154,16 @@ class StreamlitHubSpotIntegration:
                 else:
                     name = f"Contact {contact.get('id')}"
 
-                # Add company info if available
-                if company:
-                    display_name = f"{name} ({company})"
-                else:
-                    display_name = name
+                display_name = name
 
                 contacts.append({
                     'id': contact.get('id'),
                     'name': name,
                     'display_name': display_name,
                     'email': email,
-                    'company': company,
-                    'phone': props.get("phone", ""),
-                    'jobtitle': props.get("jobtitle", "")
+                    'company': "N/A",
+                    'phone': "N/A",
+                    'jobtitle': "N/A"
                 })
 
             return contacts
@@ -569,18 +564,10 @@ def render_contact_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
         st.warning(f"No contacts found in HubSpot")
         return None
 
-    # Filter contacts by role if specified
+    # Temporarily disable role filtering until we can access job title property
+    # TODO: Implement role filtering with proper HubSpot property access
     if role_filter:
-        filtered_contacts = []
-        for contact in contacts:
-            jobtitle = contact.get('jobtitle', '').lower()
-            if role_filter.lower() in jobtitle:
-                filtered_contacts.append(contact)
-        contacts = filtered_contacts
-
-        if not contacts:
-            st.warning(f"No contacts found with role '{role_filter}' in HubSpot")
-            return None
+        st.info(f"📝 Note: Showing all contacts. Role filtering for '{role_filter}' temporarily disabled.")
 
     # Prepare options
     contact_options = ["Select Contact"] + [contact['display_name'] for contact in contacts]
@@ -615,19 +602,16 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
         with st.spinner("Loading Vânzători contacts..."):
             all_contacts = hubspot.get_contacts()
 
-            # Filter for Vanzatori role
-            vanzatori_contacts = []
-            for contact in all_contacts:
-                jobtitle = contact.get('jobtitle', '').lower()
-                if 'vanzatori' in jobtitle:
-                    vanzatori_contacts.append(contact)
+            # For now, show all contacts since we can't filter by job title
+            # TODO: Add custom property for contact role filtering
+            vanzatori_contacts = all_contacts
 
             st.session_state["vanzatori_contacts"] = vanzatori_contacts
 
     vanzatori_contacts = st.session_state["vanzatori_contacts"]
 
     if not vanzatori_contacts:
-        st.warning("Nu au fost găsiți contacte cu rolul 'Vânzători' în HubSpot")
+        st.warning("Nu au fost găsiți contacte în HubSpot")
         return
 
     # Refresh button
