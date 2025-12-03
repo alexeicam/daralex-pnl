@@ -674,11 +674,111 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
     if table_data:
         import pandas as pd
         df = pd.DataFrame(table_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
 
-        if st.button(t.get("refresh_deals", "🔄 Refresh Deals"), key="refresh_deals"):
-            del st.session_state["recent_deals"]
-            st.rerun()
+        # Make table editable
+        st.write(t.get("edit_deals", "**Edit deals by clicking on cells:**"))
+        edited_df = st.data_editor(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                t.get("stage", "Stage"): st.column_config.SelectboxColumn(
+                    "Stage",
+                    help="Select deal stage",
+                    options=[
+                        "Appointment Scheduled",
+                        "Qualified To Buy",
+                        "Presentation Scheduled",
+                        "Decision Maker Bought-In",
+                        "Contract Sent",
+                        "Closed Won",
+                        "Closed Lost"
+                    ],
+                    required=True
+                ),
+                t.get("profit", "Profit"): st.column_config.TextColumn(
+                    "Profit",
+                    help="Edit profit amount"
+                )
+            },
+            key="deals_editor"
+        )
+
+        # Buttons row
+        col_refresh, col_save, col_update = st.columns(3)
+
+        with col_refresh:
+            if st.button(t.get("refresh_deals", "🔄 Refresh Deals"), key="refresh_deals"):
+                del st.session_state["recent_deals"]
+                st.rerun()
+
+        with col_save:
+            if st.button(t.get("save_changes", "💾 Save Changes"), key="save_changes"):
+                # Here we could save changes back to HubSpot
+                st.success("Changes saved locally! (HubSpot sync coming soon)")
+
+        with col_update:
+            if st.button(t.get("sync_hubspot", "🔄 Sync to HubSpot"), key="sync_hubspot"):
+                # Update deals in HubSpot with edited values
+                updated_deals = _update_deals_in_hubspot(hubspot, df, edited_df, deals)
+                if updated_deals > 0:
+                    st.success(f"✅ Updated {updated_deals} deals in HubSpot!")
+                    # Refresh the deals list
+                    del st.session_state["recent_deals"]
+                    st.rerun()
+                else:
+                    st.info("No changes detected")
+
+def _update_deals_in_hubspot(hubspot: StreamlitHubSpotIntegration, original_df, edited_df, deals_data) -> int:
+    """
+    Update deals in HubSpot based on edited table data
+    """
+    updated_count = 0
+
+    if not hubspot.is_connected:
+        st.warning("HubSpot not connected")
+        return 0
+
+    try:
+        # Compare original vs edited data
+        for index, (orig_row, edit_row) in enumerate(zip(original_df.iterrows(), edited_df.iterrows())):
+            orig_data = orig_row[1]
+            edit_data = edit_row[1]
+
+            # Check if anything changed
+            changes = {}
+
+            # Map stage changes
+            if orig_data.get("Stage", "") != edit_data.get("Stage", ""):
+                stage_mapping = {
+                    "Appointment Scheduled": "appointmentscheduled",
+                    "Qualified To Buy": "qualifiedtobuy",
+                    "Presentation Scheduled": "presentationscheduled",
+                    "Decision Maker Bought-In": "decisionmakerboughtin",
+                    "Contract Sent": "contractsent",
+                    "Closed Won": "closedwon",
+                    "Closed Lost": "closedlost"
+                }
+                new_stage = stage_mapping.get(edit_data.get("Stage", ""), "appointmentscheduled")
+                changes["dealstage"] = new_stage
+
+            # If we have changes, update the deal
+            if changes and index < len(deals_data):
+                deal_id = deals_data[index].get("id")
+                if deal_id:
+                    url = f"{hubspot.base_url}/crm/v3/objects/deals/{deal_id}"
+                    payload = {"properties": changes}
+
+                    response = requests.patch(url, headers=hubspot.headers, json=payload, timeout=10)
+                    if response.status_code == 200:
+                        updated_count += 1
+                    else:
+                        st.warning(f"Failed to update deal {deal_id}")
+
+    except Exception as e:
+        st.error(f"Error updating deals: {str(e)}")
+
+    return updated_count
 
 def add_hubspot_save_option(calculation_result: Dict[str, Any],
                            calculation_params: Dict[str, Any]):

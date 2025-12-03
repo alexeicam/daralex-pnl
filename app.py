@@ -87,6 +87,9 @@ TRANSLATIONS = {
         "profit": "Profit",
         "margin": "Margin",
         "stage": "Stage",
+        "save_changes": "💾 Save Changes",
+        "sync_hubspot": "🔄 Sync to HubSpot",
+        "edit_deals": "**Edit deals by clicking on cells:**",
     },
     "ro": {
         "title": "🌻 DARALEX Calculator P&L",
@@ -143,6 +146,9 @@ TRANSLATIONS = {
         "profit": "Profit",
         "margin": "Marjă",
         "stage": "Stadiu",
+        "save_changes": "💾 Salvează Modificări",
+        "sync_hubspot": "🔄 Sincronizează cu HubSpot",
+        "edit_deals": "**Editează tranzacțiile făcând clic pe celule:**",
     }
 }
 
