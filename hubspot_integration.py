@@ -667,7 +667,7 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
             t.get("quantity", "Quantity"): quantity,
             t.get("profit", "Profit"): profit,
             t.get("margin", "Margin"): f"€{float(props.get('amount', 0) or 0):,.0f}",
-            t.get("stage", "Stage"): (props.get("dealstage", "unknown") or "unknown").replace("_", " ").title()
+            t.get("stage", "Stage"): _map_hubspot_to_display(props.get("dealstage", "unknown"), t)
         })
 
     # Display table
@@ -683,17 +683,9 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
             hide_index=True,
             column_config={
                 t.get("stage", "Stage"): st.column_config.SelectboxColumn(
-                    "Stage",
+                    t.get("stage", "Stage"),
                     help="Select deal stage",
-                    options=[
-                        "Appointment Scheduled",
-                        "Qualified To Buy",
-                        "Presentation Scheduled",
-                        "Decision Maker Bought-In",
-                        "Contract Sent",
-                        "Closed Won",
-                        "Closed Lost"
-                    ],
+                    options=_get_stage_options(t),
                     required=True
                 ),
                 t.get("profit", "Profit"): st.column_config.TextColumn(
@@ -720,7 +712,7 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
         with col_update:
             if st.button(t.get("sync_hubspot", "🔄 Sync to HubSpot"), key="sync_hubspot"):
                 # Update deals in HubSpot with edited values
-                updated_deals = _update_deals_in_hubspot(hubspot, df, edited_df, deals)
+                updated_deals = _update_deals_in_hubspot(hubspot, df, edited_df, deals, t)
                 if updated_deals > 0:
                     st.success(f"✅ Updated {updated_deals} deals in HubSpot!")
                     # Refresh the deals list
@@ -729,7 +721,88 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
                 else:
                     st.info("No changes detected")
 
-def _update_deals_in_hubspot(hubspot: StreamlitHubSpotIntegration, original_df, edited_df, deals_data) -> int:
+def _get_stage_options(t: Dict[str, str] = None) -> List[str]:
+    """Get stage options based on language"""
+    if not t:
+        return [
+            "Appointment Scheduled",
+            "Qualified To Buy",
+            "Presentation Scheduled",
+            "Decision Maker Bought-In",
+            "Contract Sent",
+            "Closed Won",
+            "Closed Lost"
+        ]
+
+    return [
+        t.get("stage_appointment", "Appointment Scheduled"),
+        t.get("stage_qualified", "Qualified To Buy"),
+        t.get("stage_presentation", "Presentation Scheduled"),
+        t.get("stage_decision", "Decision Maker Bought-In"),
+        t.get("stage_contract", "Contract Sent"),
+        t.get("stage_won", "Closed Won"),
+        t.get("stage_lost", "Closed Lost")
+    ]
+
+def _map_stage_to_hubspot(stage_display: str, t: Dict[str, str] = None) -> str:
+    """Map display stage name to HubSpot stage value"""
+    if not t:
+        # English mapping
+        stage_mapping = {
+            "Appointment Scheduled": "appointmentscheduled",
+            "Qualified To Buy": "qualifiedtobuy",
+            "Presentation Scheduled": "presentationscheduled",
+            "Decision Maker Bought-In": "decisionmakerboughtin",
+            "Contract Sent": "contractsent",
+            "Closed Won": "closedwon",
+            "Closed Lost": "closedlost"
+        }
+    else:
+        # Romanian mapping
+        stage_mapping = {
+            t.get("stage_appointment", "Appointment Scheduled"): "appointmentscheduled",
+            t.get("stage_qualified", "Qualified To Buy"): "qualifiedtobuy",
+            t.get("stage_presentation", "Presentation Scheduled"): "presentationscheduled",
+            t.get("stage_decision", "Decision Maker Bought-In"): "decisionmakerboughtin",
+            t.get("stage_contract", "Contract Sent"): "contractsent",
+            t.get("stage_won", "Closed Won"): "closedwon",
+            t.get("stage_lost", "Closed Lost"): "closedlost"
+        }
+
+    return stage_mapping.get(stage_display, "appointmentscheduled")
+
+def _map_hubspot_to_display(hubspot_stage: str, t: Dict[str, str] = None) -> str:
+    """Map HubSpot stage value to display name"""
+    if not hubspot_stage or hubspot_stage == "unknown":
+        return t.get("stage_unknown", "Unknown") if t else "Unknown"
+
+    # Reverse mapping from HubSpot values to display names
+    if not t:
+        # English mapping
+        hubspot_mapping = {
+            "appointmentscheduled": "Appointment Scheduled",
+            "qualifiedtobuy": "Qualified To Buy",
+            "presentationscheduled": "Presentation Scheduled",
+            "decisionmakerboughtin": "Decision Maker Bought-In",
+            "contractsent": "Contract Sent",
+            "closedwon": "Closed Won",
+            "closedlost": "Closed Lost"
+        }
+    else:
+        # Romanian mapping
+        hubspot_mapping = {
+            "appointmentscheduled": t.get("stage_appointment", "Întâlnire Programată"),
+            "qualifiedtobuy": t.get("stage_qualified", "Calificat Pentru Cumpărare"),
+            "presentationscheduled": t.get("stage_presentation", "Prezentare Programată"),
+            "decisionmakerboughtin": t.get("stage_decision", "Factorul Decizional Convins"),
+            "contractsent": t.get("stage_contract", "Contract Trimis"),
+            "closedwon": t.get("stage_won", "Câștigat"),
+            "closedlost": t.get("stage_lost", "Pierdut")
+        }
+
+    return hubspot_mapping.get(hubspot_stage.lower(), hubspot_stage.replace("_", " ").title())
+
+def _update_deals_in_hubspot(hubspot: StreamlitHubSpotIntegration, original_df, edited_df, deals_data, t: Dict[str, str] = None) -> int:
     """
     Update deals in HubSpot based on edited table data
     """
@@ -749,17 +822,9 @@ def _update_deals_in_hubspot(hubspot: StreamlitHubSpotIntegration, original_df, 
             changes = {}
 
             # Map stage changes
-            if orig_data.get("Stage", "") != edit_data.get("Stage", ""):
-                stage_mapping = {
-                    "Appointment Scheduled": "appointmentscheduled",
-                    "Qualified To Buy": "qualifiedtobuy",
-                    "Presentation Scheduled": "presentationscheduled",
-                    "Decision Maker Bought-In": "decisionmakerboughtin",
-                    "Contract Sent": "contractsent",
-                    "Closed Won": "closedwon",
-                    "Closed Lost": "closedlost"
-                }
-                new_stage = stage_mapping.get(edit_data.get("Stage", ""), "appointmentscheduled")
+            stage_col_name = t.get("stage", "Stage") if t else "Stage"
+            if orig_data.get(stage_col_name, "") != edit_data.get(stage_col_name, ""):
+                new_stage = _map_stage_to_hubspot(edit_data.get(stage_col_name, ""), t)
                 changes["dealstage"] = new_stage
 
             # If we have changes, update the deal

@@ -3,6 +3,8 @@ import requests
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 import logging
+import refinitiv.data as rd
+from datetime import datetime
 
 # Import our enhanced calculator
 try:
@@ -90,6 +92,13 @@ TRANSLATIONS = {
         "save_changes": "💾 Save Changes",
         "sync_hubspot": "🔄 Sync to HubSpot",
         "edit_deals": "**Edit deals by clicking on cells:**",
+        "stage_appointment": "Appointment Scheduled",
+        "stage_qualified": "Qualified To Buy",
+        "stage_presentation": "Presentation Scheduled",
+        "stage_decision": "Decision Maker Bought-In",
+        "stage_contract": "Contract Sent",
+        "stage_won": "Closed Won",
+        "stage_lost": "Closed Lost",
     },
     "ro": {
         "title": "🌻 DARALEX Calculator P&L",
@@ -101,7 +110,7 @@ TRANSLATIONS = {
         "target_profit": "Profit Țintă (EUR/t)",
         "quantity": "Cantitate (tone)",
         "transport": "Transport (USD/t)",
-        "loss": "Pierderi (kg/camion)",
+        "pierderi": "Pierderi (kg/camion)",
         "broker": "Comision Broker (EUR/t)",
         "customs": "Cost Vamal (EUR/t)",
         "vat": "TVA %",
@@ -149,6 +158,13 @@ TRANSLATIONS = {
         "save_changes": "💾 Salvează Modificări",
         "sync_hubspot": "🔄 Sincronizează cu HubSpot",
         "edit_deals": "**Editează tranzacțiile făcând clic pe celule:**",
+        "stage_appointment": "Întâlnire Programată",
+        "stage_qualified": "Calificat Pentru Cumpărare",
+        "stage_presentation": "Prezentare Programată",
+        "stage_decision": "Factorul Decizional Convins",
+        "stage_contract": "Contract Trimis",
+        "stage_won": "Câștigat",
+        "stage_lost": "Pierdut",
     }
 }
 
@@ -251,16 +267,27 @@ def calculate_forwardation(supplier_price_usd, target_profit_eur, eur_usd, eur_m
         profit_per_truck=profit_per_truck, total_profit=total_profit, margin_pct=margin_pct
     )
 
-def fetch_exchange_rates():
+def get_fallback_rates():
     """Your existing exchange rate fetching"""
     try:
         response = requests.get("https://api.exchangerate-api.com/v4/latest/EUR", timeout=10)
         if response.status_code == 200:
             data = response.json()
-            return data["rates"].get("USD", 1.164), data["rates"].get("MDL", 19.5)
-        return 1.164, 19.5
+            return data["rates"].get("USD", 1.164), data["rates"].get("MDL", 19.5), "fallback"
+        return 1.164, 19.5, "fallback"
     except:
-        return 1.164, 19.5
+        return 1.164, 19.5, "fallback"
+
+def get_refinitiv_rates():
+    try:
+        rd.open_session()  # Auto-reads config file
+        df = rd.get_data(["EUR=", "EURMDL=R"], fields=["BID", "ASK"])
+        rd.close_session()
+        eur_usd = df.loc["EUR=", "BID"]
+        eur_mdl = df.loc["EURMDL=R", "BID"]
+        return float(eur_usd), float(eur_mdl), "refinitiv"
+    except Exception as e:
+        return get_fallback_rates()
 
 def format_number(num: float, decimals: int = 2) -> str:
     """Your existing number formatting"""
@@ -313,9 +340,14 @@ def main():
         col_rate1, col_rate2, col_rate3 = st.columns(3)
         with col_rate1:
             if st.button(t["auto_rates"]):
-                eur_usd_auto, eur_mdl_auto = fetch_exchange_rates()
+                eur_usd_auto, eur_mdl_auto, source = get_refinitiv_rates()
                 st.session_state.eur_usd = eur_usd_auto
                 st.session_state.eur_mdl = eur_mdl_auto
+                if source == "refinitiv":
+                    st.success(f"📡 Refinitiv Live @ {datetime.now().strftime('%H:%M:%S')}")
+                else:
+                    st.warning("🌐 Market Rate")
+
 
         with col_rate2:
             eur_usd = st.number_input(t["eur_usd"], min_value=0.1, value=st.session_state.get("eur_usd", 1.164), step=0.001, format="%.3f")
