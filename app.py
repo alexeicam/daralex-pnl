@@ -355,10 +355,9 @@ def main():
                     key="supplier_currency_selector"
                 )
             with col_price:
-                currency_symbol = "$" if supplier_currency == "USD" else "€"
                 default_price = 1225.0 if supplier_currency == "USD" else 1052.0
                 price = st.number_input(
-                    f"{t['supplier_price']} ({currency_symbol}/t)",
+                    f"{t['supplier_price']} (/t)",
                     min_value=0.0,
                     value=default_price,
                     step=10.0
