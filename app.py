@@ -105,7 +105,7 @@ TRANSLATIONS = {
         "eur_usd": "Curs EUR/USD",
         "eur_mdl": "Curs EUR/MDL",
         "calculate": "🧮 CALCULEAZĂ",
-        "results": "✅ REZULTATE",
+        "results": "REZULTATE",
         "max_buy": "Preț Max Cumpărare",
         "min_sell": "Preț Min Vânzare",
         "profit_truck": "Profit per Camion (24t)",
