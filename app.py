@@ -296,18 +296,22 @@ def main():
 
                 # Use enhanced calculator if available
                 if enhanced_mode:
-                    result = enhanced_calculator.calculate_enhanced_backwardation(**calc_params)
+                    # Filter parameters for enhanced calculator
+                    enhanced_params = {k: v for k, v in calc_params.items() if k != "calculation_type"}
+                    result = enhanced_calculator.calculate_enhanced_backwardation(**enhanced_params)
                 else:
                     # Use your existing calculation
-                    result = calculate_backwardation(price, **{k: v for k, v in calc_params.items() if k != "market_price_eur" and k != "calculation_type"})
+                    result = calculate_backwardation(price, **{k: v for k, v in calc_params.items() if k not in ["market_price_eur", "calculation_type"]})
             else:
                 calc_params["supplier_price_usd"] = price
                 calc_params["calculation_type"] = "forwardation"
 
                 if enhanced_mode:
-                    result = enhanced_calculator.calculate_enhanced_forwardation(**calc_params)
+                    # Filter parameters for enhanced calculator
+                    enhanced_params = {k: v for k, v in calc_params.items() if k != "calculation_type"}
+                    result = enhanced_calculator.calculate_enhanced_forwardation(**enhanced_params)
                 else:
-                    result = calculate_forwardation(price, **{k: v for k, v in calc_params.items() if k != "supplier_price_usd" and k != "calculation_type"})
+                    result = calculate_forwardation(price, **{k: v for k, v in calc_params.items() if k not in ["supplier_price_usd", "calculation_type"]})
 
             # Store results in session state
             st.session_state.last_result = result
