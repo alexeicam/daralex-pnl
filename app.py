@@ -122,7 +122,7 @@ TRANSLATIONS = {
         "target_profit": "Profit Țintă (EUR/t)",
         "quantity": "Cantitate (tone)",
         "transport": "Transport (USD/t)",
-        "pierderi": "Pierderi (kg/camion)",
+        "loss": "Pierderi (kg/camion)",
         "broker": "Comision Broker (EUR/t)",
         "customs": "Cost Vamal (EUR/t)",
         "vat": "TVA %",
