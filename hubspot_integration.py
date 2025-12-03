@@ -663,11 +663,11 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
         table_data.append({
             t.get("date", "Date"): date_str,
             t.get("product", "Product"): product,
-            t.get("deal", "Deal"): props.get("dealname", "Unnamed Deal")[:40] + ("..." if len(props.get("dealname", "")) > 40 else ""),
+            t.get("deal", "Deal"): (props.get("dealname", "Unnamed Deal") or "Unnamed Deal")[:40] + ("..." if len(props.get("dealname", "") or "") > 40 else ""),
             t.get("quantity", "Quantity"): quantity,
             t.get("profit", "Profit"): profit,
             t.get("margin", "Margin"): f"€{float(props.get('amount', 0) or 0):,.0f}",
-            t.get("stage", "Stage"): props.get("dealstage", "unknown").replace("_", " ").title()
+            t.get("stage", "Stage"): (props.get("dealstage", "unknown") or "unknown").replace("_", " ").title()
         })
 
     # Display table
