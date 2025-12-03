@@ -31,10 +31,15 @@ try:
         display_vanzatori_contacts,
         StreamlitHubSpotIntegration
     )
-    from market_intel import render_market_intelligence_tab
+    # Temporarily disable market_intel import until dependencies are fixed
+    # from market_intel import render_market_intelligence_tab
     ENHANCED_MODE = True
-except ImportError:
+    MARKET_INTEL_AVAILABLE = False
+except ImportError as e:
     ENHANCED_MODE = False
+    MARKET_INTEL_AVAILABLE = False
+    # Store the import error for debugging
+    IMPORT_ERROR = str(e)
 
 # Initialize enhanced calculator if available
 if ENHANCED_MODE:
@@ -343,15 +348,19 @@ def main():
 
     # Show warning if enhanced mode is not available
     if not ENHANCED_MODE:
-        st.warning("⚠️ Enhanced features not available. Using basic mode.")
+        error_msg = "⚠️ Enhanced features not available. Using basic mode."
+        if 'IMPORT_ERROR' in globals():
+            error_msg += f"\n\nImport error: {IMPORT_ERROR}"
+        st.warning(error_msg)
 
     # Handle page routing
     if page == "📊 Market Intel":
         # Market Intelligence page
-        if ENHANCED_MODE:
+        if ENHANCED_MODE and MARKET_INTEL_AVAILABLE:
             render_market_intelligence_tab(t)
         else:
-            st.error("Enhanced mode required for Market Intelligence")
+            st.error("Market Intelligence temporarily unavailable due to missing dependencies")
+            st.info("📊 This feature requires additional market data components that are being set up.")
         return
 
     if page == "👥 Lista Vânzători":
