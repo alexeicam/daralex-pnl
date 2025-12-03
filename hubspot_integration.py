@@ -7,7 +7,7 @@ import os
 import requests
 import streamlit as st
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 from pnl_calculator import EnhancedVegetableOilCalculator
@@ -187,27 +187,18 @@ class StreamlitHubSpotIntegration:
                 product, calculation_result, calculation_params, deal_type
             )
 
-            # Prepare deal properties
+            # Prepare deal properties - using only standard HubSpot properties
             deal_properties = {
                 "dealname": deal_name,
-                "product": product,
-                "deal_type": deal_type,
                 "amount": str(contract_value),
-                "quantity_tons": str(quantity),
-                "price_per_ton": str(price_per_ton),
-                "target_profit": str(calculation_params.get("target_profit_eur", 0)),
-                "calculated_margin": str(calculation_result.get("margin_pct", 0)),
-                "calculated_profit": str(calculation_result.get("total_profit", 0)),
-                "eur_usd_rate": str(calculation_params.get("eur_usd", 0)),
-                "transport_cost": str(calculation_params.get("transport_usd", 0)),
-                "broker_commission": str(calculation_params.get("broker_eur", 0)),
-                "customs_cost": str(calculation_params.get("customs_eur", 0)),
-                "calculation_timestamp": datetime.now().isoformat(),
-                "source": "DARALEX_PnL_Calculator",
-                "deal_description": description,
                 "dealstage": "appointmentscheduled",
-                "pipeline": "default"
+                "pipeline": "default",
+                "hs_deal_stage_probability": "0.2",
+                "closedate": (datetime.now() + timedelta(days=30)).isoformat()
             }
+
+            # Add description with all our custom data
+            deal_properties["description"] = description
 
             payload = {"properties": deal_properties}
 
@@ -294,7 +285,7 @@ class StreamlitHubSpotIntegration:
             url = f"{self.base_url}/crm/v3/objects/deals"
             params = {
                 "limit": limit,
-                "properties": "dealname,amount,dealstage,pipeline,price_per_ton,quantity_tons",
+                "properties": "dealname,amount,dealstage,pipeline,createdate,description",
                 "sorts": [{"propertyName": "hs_lastmodifieddate", "direction": "DESCENDING"}]
             }
 
@@ -634,13 +625,38 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
         else:
             date_str = "Unknown"
 
+        # Extract data from description if available
+        description = props.get("description", "")
+        product = "N/A"
+        quantity = "N/A"
+        profit = "N/A"
+
+        # Simple parsing of description for display
+        if "Product:" in description:
+            try:
+                product = description.split("Product: ")[1].split("\n")[0]
+            except:
+                pass
+
+        if "Quantity:" in description:
+            try:
+                quantity = description.split("Quantity: ")[1].split(" tons")[0] + "t"
+            except:
+                pass
+
+        if "Total Profit:" in description:
+            try:
+                profit = description.split("Total Profit: ")[1].split("\n")[0]
+            except:
+                pass
+
         table_data.append({
             t.get("date", "Date"): date_str,
-            t.get("product", "Product"): props.get("product", "N/A"),
-            t.get("deal", "Deal"): props.get("dealname", "Unnamed Deal")[:40] + "...",
-            t.get("quantity", "Quantity"): f"{float(props.get('quantity_tons', 0) or 0):.0f}t",
-            t.get("profit", "Profit"): f"€{float(props.get('calculated_profit', 0) or 0):,.0f}",
-            t.get("margin", "Margin"): f"{float(props.get('calculated_margin', 0) or 0):.1f}%",
+            t.get("product", "Product"): product,
+            t.get("deal", "Deal"): props.get("dealname", "Unnamed Deal")[:40] + ("..." if len(props.get("dealname", "")) > 40 else ""),
+            t.get("quantity", "Quantity"): quantity,
+            t.get("profit", "Profit"): profit,
+            t.get("margin", "Margin"): f"€{float(props.get('amount', 0) or 0):,.0f}",
             t.get("stage", "Stage"): props.get("dealstage", "unknown").replace("_", " ").title()
         })
 
