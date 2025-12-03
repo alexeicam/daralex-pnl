@@ -128,15 +128,11 @@ class StreamlitHubSpotIntegration:
         try:
             url = f"{self.base_url}/crm/v3/objects/companies"
 
-            # Prepare company properties
+            # Prepare company properties - use only standard HubSpot properties
             company_properties = {
                 "name": company_name,
                 "country": country,
-                "industry": "FOOD_PRODUCTION",
-                "type": "PROSPECT",
-                "hs_lead_status": "NEW",
-                "created_by": "DARALEX_PnL_Calculator",
-                "created_date": datetime.now().isoformat()
+                "industry": "FOOD_PRODUCTION"
             }
 
             payload = {"properties": company_properties}

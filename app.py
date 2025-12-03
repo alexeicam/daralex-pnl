@@ -470,7 +470,7 @@ def main():
                 with col_res2:
                     st.metric("💶 EUR/t", f"€{result.max_buy_eur:,.2f}")
                 with col_res3:
-                    st.metric("🏦 MDL/t", f"L{result.max_buy_mdl:,.2f}")
+                    st.metric("🏦 MDL/t", f"L{result.max_buy_mdl_vat:,.2f}")
                 with col_res4:
                     st.metric("📊 Margin", f"{result.margin_pct:.2f}%")
             else:
@@ -490,7 +490,7 @@ def main():
                 with col_res2:
                     st.metric("💶 EUR/t", f"€{result.min_sell_eur:,.2f}")
                 with col_res3:
-                    st.metric("🏦 MDL/t", f"L{result.min_sell_mdl:,.2f}")
+                    st.metric("🏦 MDL/t", f"L{result.min_sell_mdl_vat:,.2f}")
                 with col_res4:
                     st.metric("📊 Margin", f"{result.margin_pct:.2f}%")
             else:
@@ -499,7 +499,7 @@ def main():
                 with col_res2:
                     st.metric("💶 EUR/t", f"€{result.price_eur:,.2f}")
                 with col_res3:
-                    st.metric("🏦 MDL/t", f"L{result.price_mdl:,.2f}")
+                    st.metric("🏦 MDL/t", f"L{result.price_mdl_vat:,.2f}")
                 with col_res4:
                     st.metric("📊 Margin", f"{result.margin_pct:.2f}%")
 
