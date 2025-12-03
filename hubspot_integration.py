@@ -134,7 +134,7 @@ class StreamlitHubSpotIntegration:
                 # Prepare parameters
                 params = {
                     "limit": min(page_size, max_contacts - len(all_contacts)),
-                    "properties": "firstname,lastname,email,company,product_interest,descriere_relatie,responsible_trader,country,state,address,etapa_relatiei,last_price_offered,last_price_quoted"
+                    "properties": "firstname,lastname,email,company"
                 }
 
                 # Add pagination cursor if available
@@ -175,17 +175,16 @@ class StreamlitHubSpotIntegration:
                         'display_name': display_name,
                         'email': email,
                         'company': props.get("company", ""),
-                        'product_interest': props.get("product_interest", ""),
-                        'descriere_relatie': props.get("descriere_relatie", ""),
-                        'responsible_trader': props.get("responsible_trader", ""),
-                        'country': props.get("country", ""),
-                        'state': props.get("state", ""),
-                        'address': props.get("address", ""),
-                        'etapa_relatiei': props.get("etapa_relatiei", ""),
-                        'last_price_offered': props.get("last_price_offered", ""),
-                        'last_price_quoted': props.get("last_price_quoted", ""),
-                        'phone': "N/A",
-                        'jobtitle': "N/A"
+                        # Placeholder columns for future custom properties
+                        'product_interest': "",
+                        'descriere_relatie': "",
+                        'responsible_trader': "",
+                        'country': "",
+                        'state': "",
+                        'address': "",
+                        'etapa_relatiei': "",
+                        'last_price_offered': "",
+                        'last_price_quoted': ""
                     })
 
                 # Check if there are more pages
@@ -637,6 +636,7 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
         return
 
     st.subheader("📋 Lista Vânzători")
+    st.info("💡 Showing basic contact data. Additional fields are available for editing and will require HubSpot custom properties setup.")
 
     # Load contacts if not in cache
     if "vanzatori_contacts" not in st.session_state:
