@@ -78,6 +78,15 @@ TRANSLATIONS = {
         "country": "Country",
         "create_buyer": "Create Buyer",
         "create_seller": "Create Seller",
+        "refresh_deals": "🔄 Refresh Deals",
+        "no_deals": "No recent deals found.",
+        "date": "Date",
+        "product": "Product",
+        "deal": "Deal",
+        "quantity": "Quantity",
+        "profit": "Profit",
+        "margin": "Margin",
+        "stage": "Stage",
     },
     "ro": {
         "title": "🌻 DARALEX Calculator P&L",
@@ -125,6 +134,15 @@ TRANSLATIONS = {
         "country": "Țară",
         "create_buyer": "Creează Cumpărător",
         "create_seller": "Creează Vânzător",
+        "refresh_deals": "🔄 Reîmprospătează Tranzacții",
+        "no_deals": "Nu s-au găsit tranzacții recente.",
+        "date": "Data",
+        "product": "Produs",
+        "deal": "Tranzacție",
+        "quantity": "Cantitate",
+        "profit": "Profit",
+        "margin": "Marjă",
+        "stage": "Stadiu",
     }
 }
 
@@ -458,7 +476,7 @@ def main():
     if ENHANCED_MODE:
         st.markdown("---")
         st.markdown(f"### 📊 {t['recent_deals']}")
-        render_deals_log(StreamlitHubSpotIntegration())
+        render_deals_log(StreamlitHubSpotIntegration(), t)
 
 if __name__ == "__main__":
     main()

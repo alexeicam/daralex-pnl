@@ -586,14 +586,25 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
                 del st.session_state[key]
             st.rerun()
 
-def render_deals_log(hubspot: StreamlitHubSpotIntegration):
+def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = None):
     """
     Render recent deals log table
     """
     if not hubspot.is_connected:
         return
 
-    st.markdown("### 📊 Recent Deals")
+    if not t:
+        t = {
+            "refresh_deals": "🔄 Refresh Deals",
+            "no_deals": "No recent deals found.",
+            "date": "Date",
+            "product": "Product",
+            "deal": "Deal",
+            "quantity": "Quantity",
+            "profit": "Profit",
+            "margin": "Margin",
+            "stage": "Stage"
+        }
 
     # Load deals if not cached
     if "recent_deals" not in st.session_state:
@@ -604,7 +615,7 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration):
     deals = st.session_state["recent_deals"]
 
     if not deals:
-        st.info("No recent deals found.")
+        st.info(t.get("no_deals", "No recent deals found."))
         return
 
     # Prepare table data
@@ -624,13 +635,13 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration):
             date_str = "Unknown"
 
         table_data.append({
-            "Date": date_str,
-            "Product": props.get("product", "N/A"),
-            "Deal": props.get("dealname", "Unnamed Deal")[:40] + "...",
-            "Quantity": f"{float(props.get('quantity_tons', 0) or 0):.0f}t",
-            "Profit": f"€{float(props.get('calculated_profit', 0) or 0):,.0f}",
-            "Margin": f"{float(props.get('calculated_margin', 0) or 0):.1f}%",
-            "Stage": props.get("dealstage", "unknown").replace("_", " ").title()
+            t.get("date", "Date"): date_str,
+            t.get("product", "Product"): props.get("product", "N/A"),
+            t.get("deal", "Deal"): props.get("dealname", "Unnamed Deal")[:40] + "...",
+            t.get("quantity", "Quantity"): f"{float(props.get('quantity_tons', 0) or 0):.0f}t",
+            t.get("profit", "Profit"): f"€{float(props.get('calculated_profit', 0) or 0):,.0f}",
+            t.get("margin", "Margin"): f"{float(props.get('calculated_margin', 0) or 0):.1f}%",
+            t.get("stage", "Stage"): props.get("dealstage", "unknown").replace("_", " ").title()
         })
 
     # Display table
@@ -639,7 +650,7 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration):
         df = pd.DataFrame(table_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
 
-        if st.button("🔄 Refresh Deals", key="refresh_deals"):
+        if st.button(t.get("refresh_deals", "🔄 Refresh Deals"), key="refresh_deals"):
             del st.session_state["recent_deals"]
             st.rerun()
 
