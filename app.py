@@ -19,6 +19,7 @@ try:
         display_hubspot_status,
         render_deal_tracking_section,
         render_deals_log,
+        display_vanzatori_contacts,
         StreamlitHubSpotIntegration
     )
     ENHANCED_MODE = True
@@ -205,6 +206,19 @@ def render_sidebar():
     with st.sidebar:
         st.markdown("### 🎯 Enhanced Features")
 
+        # Page navigation
+        if ENHANCED_MODE:
+            st.markdown("### 📄 Pagini")
+            page = st.selectbox(
+                "Alege pagina:",
+                ["🏠 Calculator Principal", "👥 Lista Vânzători"],
+                key="page_selector"
+            )
+        else:
+            page = "🏠 Calculator Principal"
+
+        st.markdown("---")
+
         # Language selector (keeping your existing feature)
         lang = st.selectbox("🌐 Language / Limba", ["en", "ro"], index=1, key="lang")
 
@@ -227,7 +241,7 @@ def render_sidebar():
             show_sensitivity = False
             show_breakdown = False
 
-        return lang, enhanced_mode if ENHANCED_MODE else False, show_sensitivity, show_breakdown
+        return lang, enhanced_mode if ENHANCED_MODE else False, show_sensitivity, show_breakdown, page
 
 # Your existing functions (keeping them for compatibility)
 def calculate_backwardation(market_price_eur, target_profit_eur, eur_usd, eur_mdl,
@@ -323,10 +337,20 @@ def format_number(num: float, decimals: int = 2) -> str:
 
 def main():
     # Render sidebar and get settings
-    lang, enhanced_mode, show_sensitivity, show_breakdown = render_sidebar()
+    lang, enhanced_mode, show_sensitivity, show_breakdown, page = render_sidebar()
     t = TRANSLATIONS[lang]
 
-    # Main title
+    # Handle page routing
+    if page == "👥 Lista Vânzători":
+        # Dedicated Vânzători page
+        st.title("👥 Lista Vânzători HubSpot")
+        if ENHANCED_MODE:
+            display_vanzatori_contacts(StreamlitHubSpotIntegration(), t)
+        else:
+            st.error("Enhanced mode required for HubSpot integration")
+        return
+
+    # Main calculator page
     st.title(t["title"])
 
     if enhanced_mode:

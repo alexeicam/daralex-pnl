@@ -78,7 +78,7 @@ class StreamlitHubSpotIntegration:
                 "connected": False
             }
 
-    def get_companies(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_companies(self, limit: int = 500) -> List[Dict[str, Any]]:
         """
         Fetch companies from HubSpot for buyer/seller selection
         """
@@ -117,6 +117,67 @@ class StreamlitHubSpotIntegration:
             st.error(f"Error fetching companies: {str(e)}")
             return []
 
+    def get_contacts(self, limit: int = 500) -> List[Dict[str, Any]]:
+        """
+        Fetch contacts from HubSpot for buyer/seller selection
+        """
+        if not self.is_connected:
+            return []
+
+        try:
+            url = f"{self.base_url}/crm/v3/objects/contacts"
+            params = {
+                "limit": limit,
+                "properties": "firstname,lastname,email,company,phone,jobtitle",
+                "sorts": [{"propertyName": "lastmodifieddate", "direction": "DESCENDING"}]
+            }
+
+            response = requests.get(url, headers=self.headers, params=params, timeout=10)
+            response.raise_for_status()
+
+            data = response.json()
+            contacts_raw = data.get("results", [])
+
+            # Format contacts with readable names
+            contacts = []
+            for contact in contacts_raw:
+                props = contact.get("properties", {})
+
+                # Build display name
+                first_name = props.get("firstname", "")
+                last_name = props.get("lastname", "")
+                email = props.get("email", "")
+                company = props.get("company", "")
+
+                if first_name or last_name:
+                    name = f"{first_name} {last_name}".strip()
+                elif email:
+                    name = email
+                else:
+                    name = f"Contact {contact.get('id')}"
+
+                # Add company info if available
+                if company:
+                    display_name = f"{name} ({company})"
+                else:
+                    display_name = name
+
+                contacts.append({
+                    'id': contact.get('id'),
+                    'name': name,
+                    'display_name': display_name,
+                    'email': email,
+                    'company': company,
+                    'phone': props.get("phone", ""),
+                    'jobtitle': props.get("jobtitle", "")
+                })
+
+            return contacts
+
+        except Exception as e:
+            st.error(f"Error fetching contacts: {str(e)}")
+            return []
+
     def create_company(self, company_name: str, country: str = "Unknown") -> Optional[str]:
         """
         Create a new company in HubSpot
@@ -144,6 +205,12 @@ class StreamlitHubSpotIntegration:
             company_id = company.get("id")
 
             st.success(f"✅ Company '{company_name}' created successfully!")
+
+            # Clear companies cache to force refresh
+            keys_to_clear = [k for k in st.session_state.keys() if "_companies" in k]
+            for key in keys_to_clear:
+                del st.session_state[key]
+
             return company_id
 
         except Exception as e:
@@ -292,7 +359,7 @@ class StreamlitHubSpotIntegration:
             params = {
                 "limit": limit,
                 "properties": "dealname,amount,dealstage,pipeline,createdate,description",
-                "sorts": [{"propertyName": "hs_lastmodifieddate", "direction": "DESCENDING"}]
+                "sorts": [{"propertyName": "createdate", "direction": "DESCENDING"}]
             }
 
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
@@ -471,8 +538,7 @@ def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
             if st.button(t.get(f"create_{key_prefix}", f"Create {label}"), key=f"{key_prefix}_create"):
                 company_id = hubspot.create_company(new_company_name, new_company_country)
                 if company_id:
-                    # Refresh companies list
-                    del st.session_state[f"{key_prefix}_companies"]
+                    # Cache is already cleared in create_company method
                     st.rerun()
                 return company_id
         return None
@@ -483,6 +549,122 @@ def render_company_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
             if comp['name'] == company_name:
                 return comp['id']
         return None
+
+def render_contact_selector(label: str, key_prefix: str, hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = None, role_filter: str = None) -> Optional[str]:
+    """
+    Render contact selector from HubSpot contacts
+    """
+    if not hubspot.is_connected:
+        st.warning("HubSpot not connected")
+        return None
+
+    # Load contacts
+    if f"{key_prefix}_contacts" not in st.session_state:
+        with st.spinner(f"Loading {label.lower()}s..."):
+            contacts = hubspot.get_contacts()
+            st.session_state[f"{key_prefix}_contacts"] = contacts
+
+    contacts = st.session_state[f"{key_prefix}_contacts"]
+
+    if not contacts:
+        st.warning(f"No contacts found in HubSpot")
+        return None
+
+    # Filter contacts by role if specified
+    if role_filter:
+        filtered_contacts = []
+        for contact in contacts:
+            jobtitle = contact.get('jobtitle', '').lower()
+            if role_filter.lower() in jobtitle:
+                filtered_contacts.append(contact)
+        contacts = filtered_contacts
+
+        if not contacts:
+            st.warning(f"No contacts found with role '{role_filter}' in HubSpot")
+            return None
+
+    # Prepare options
+    contact_options = ["Select Contact"] + [contact['display_name'] for contact in contacts]
+
+    selected = st.selectbox(
+        label,
+        options=contact_options,
+        key=f"{key_prefix}_contact_selector"
+    )
+
+    if selected == "Select Contact":
+        return None
+    else:
+        # Find selected contact ID
+        for contact in contacts:
+            if contact['display_name'] == selected:
+                return contact['id']
+        return None
+
+def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = None):
+    """
+    Display filtered list of Vanzatori contacts from HubSpot
+    """
+    if not hubspot.is_connected:
+        st.warning("HubSpot not connected")
+        return
+
+    st.subheader("📋 Lista Vânzători")
+
+    # Load contacts if not in cache
+    if "vanzatori_contacts" not in st.session_state:
+        with st.spinner("Loading Vânzători contacts..."):
+            all_contacts = hubspot.get_contacts()
+
+            # Filter for Vanzatori role
+            vanzatori_contacts = []
+            for contact in all_contacts:
+                jobtitle = contact.get('jobtitle', '').lower()
+                if 'vanzatori' in jobtitle:
+                    vanzatori_contacts.append(contact)
+
+            st.session_state["vanzatori_contacts"] = vanzatori_contacts
+
+    vanzatori_contacts = st.session_state["vanzatori_contacts"]
+
+    if not vanzatori_contacts:
+        st.warning("Nu au fost găsiți contacte cu rolul 'Vânzători' în HubSpot")
+        return
+
+    # Refresh button
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("🔄 Refresh", key="refresh_vanzatori"):
+            # Clear cache and reload
+            if "vanzatori_contacts" in st.session_state:
+                del st.session_state["vanzatori_contacts"]
+            st.rerun()
+
+    # Create table data
+    table_data = []
+    for contact in vanzatori_contacts:
+        table_data.append({
+            "Nume": contact['name'],
+            "Email": contact['email'] or "N/A",
+            "Telefon": contact['phone'] or "N/A",
+            "Companie": contact['company'] or "N/A",
+            "Rol": contact['jobtitle'] or "N/A"
+        })
+
+    if table_data:
+        import pandas as pd
+        df = pd.DataFrame(table_data)
+
+        # Display as editable table
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.info(f"📊 Total: {len(vanzatori_contacts)} vânzători găsiți")
+    else:
+        st.warning("Nu s-au găsit date pentru afișare")
 
 def render_product_selector(t: Dict[str, str] = None) -> str:
     """
@@ -535,17 +717,36 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
     col_buyer, col_seller = st.columns(2)
 
     with col_buyer:
-        buyer_id = render_company_selector(t.get("select_buyer", "Select Buyer"), "buyer", hubspot, t)
+        buyer_id = render_contact_selector(t.get("select_buyer", "Select Buyer"), "buyer", hubspot, t, role_filter="Cumparatori")
 
     with col_seller:
-        seller_id = render_company_selector(t.get("select_seller", "Select Seller"), "seller", hubspot, t)
+        seller_id = render_contact_selector(t.get("select_seller", "Select Seller"), "seller", hubspot, t, role_filter="Vanzatori")
 
     # Deal creation
     deal_name_default = ""
     if product and calculation_params.get("quantity_t"):
         quantity = calculation_params.get("quantity_t", 0)
-        buyer_name = "TBD" if not buyer_id else "Buyer"
-        seller_name = "TBD" if not seller_id else "Seller"
+
+        # Get actual contact names
+        buyer_name = "TBD"
+        seller_name = "TBD"
+
+        if buyer_id:
+            # Get buyer contacts from cache
+            if "buyer_contacts" in st.session_state:
+                for contact in st.session_state["buyer_contacts"]:
+                    if contact['id'] == buyer_id:
+                        buyer_name = contact['name']
+                        break
+
+        if seller_id:
+            # Get seller contacts from cache
+            if "seller_contacts" in st.session_state:
+                for contact in st.session_state["seller_contacts"]:
+                    if contact['id'] == seller_id:
+                        seller_name = contact['name']
+                        break
+
         deal_name_default = f"{product} - {seller_name} → {buyer_name} - {quantity:.0f}t"
 
     deal_name = st.text_input(
@@ -564,8 +765,8 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
                     product=product,
                     calculation_result=calculation_result,
                     calculation_params=calculation_params,
-                    buyer_company_id=buyer_id,
-                    seller_company_id=seller_id
+                    buyer_company_id=buyer_id,  # Note: now contains contact ID
+                    seller_company_id=seller_id  # Note: now contains contact ID
                 )
                 if deal_id:
                     st.balloons()
@@ -677,7 +878,7 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
         table_data.append({
             t.get("date", "Date"): date_str,
             t.get("product", "Product"): product,
-            t.get("deal", "Deal"): (props.get("dealname", "Unnamed Deal") or "Unnamed Deal")[:40] + ("..." if len(props.get("dealname", "") or "") > 40 else ""),
+            t.get("deal", "Deal"): props.get("dealname", "Unnamed Deal") or "Unnamed Deal",
             t.get("quantity", "Quantity"): quantity,
             t.get("profit", "Profit"): profit,
             t.get("margin", "Margin"): f"€{float(props.get('amount', 0) or 0):,.0f}",
@@ -688,6 +889,18 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
     if table_data:
         import pandas as pd
         df = pd.DataFrame(table_data)
+
+        # Sort by date descending (recent first)
+        try:
+            # Convert date column to datetime for proper sorting
+            date_col = t.get("date", "Date")
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            df = df.sort_values(by=date_col, ascending=False)
+            # Convert back to string for display
+            df[date_col] = df[date_col].dt.strftime('%Y-%m-%d')
+        except:
+            # Fallback: sort as strings
+            df = df.sort_values(by=t.get("date", "Date"), ascending=False)
 
         # Make table editable
         st.write(t.get("edit_deals", "**Edit deals by clicking on cells:**"))
