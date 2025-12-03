@@ -28,7 +28,6 @@ try:
         display_hubspot_status,
         render_deal_tracking_section,
         render_deals_log,
-        display_vanzatori_contacts,
         StreamlitHubSpotIntegration
     )
     # Temporarily disable market_intel import until dependencies are fixed
@@ -217,7 +216,7 @@ def render_sidebar():
             st.markdown("### 📄 Pagini")
             page = st.selectbox(
                 "Alege pagina:",
-                ["🏠 Calculator Principal", "📊 Market Intel", "👥 Lista Vânzători"],
+                ["🏠 Calculator Principal", "📊 Market Intel"],
                 key="page_selector"
             )
         else:
@@ -363,14 +362,6 @@ def main():
             st.info("📊 This feature requires additional market data components that are being set up.")
         return
 
-    if page == "👥 Lista Vânzători":
-        # Dedicated Vânzători page
-        st.title("👥 Lista Vânzători HubSpot")
-        if ENHANCED_MODE:
-            display_vanzatori_contacts(StreamlitHubSpotIntegration(), t)
-        else:
-            st.error("Enhanced mode required for HubSpot integration")
-        return
 
     # Main calculator page
     st.title(t["title"])
