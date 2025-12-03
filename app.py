@@ -3,8 +3,14 @@ import requests
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 import logging
-import refinitiv.data as rd
 from datetime import datetime
+
+# Optional import for Refinitiv
+try:
+    import refinitiv.data as rd
+    REFINITIV_AVAILABLE = True
+except ImportError:
+    REFINITIV_AVAILABLE = False
 
 # Import our enhanced calculator
 try:
@@ -99,6 +105,12 @@ TRANSLATIONS = {
         "stage_contract": "Contract Sent",
         "stage_won": "Closed Won",
         "stage_lost": "Closed Lost",
+        "refresh_deals": "🔄 Manual Refresh",
+        "auto_refresh_in": "🔄 Auto-refresh in",
+        "auto_refreshing": "🔄 Auto-refreshing...",
+        "auto_refresh_paused": "⏸️ Auto-refresh paused",
+        "pause_auto": "⏸️ Pause Auto",
+        "enable_auto": "▶️ Enable Auto",
     },
     "ro": {
         "title": "🌻 DARALEX Calculator P&L",
@@ -165,6 +177,12 @@ TRANSLATIONS = {
         "stage_contract": "Contract Trimis",
         "stage_won": "Câștigat",
         "stage_lost": "Pierdut",
+        "refresh_deals": "🔄 Reîmprospătare Manuală",
+        "auto_refresh_in": "🔄 Auto-reîmprospătare în",
+        "auto_refreshing": "🔄 Se auto-reîmprospătează...",
+        "auto_refresh_paused": "⏸️ Auto-reîmprospătare întreruptă",
+        "pause_auto": "⏸️ Pauză Auto",
+        "enable_auto": "▶️ Activează Auto",
     }
 }
 
@@ -279,6 +297,9 @@ def get_fallback_rates():
         return 1.164, 19.5, "fallback"
 
 def get_refinitiv_rates():
+    if not REFINITIV_AVAILABLE:
+        return get_fallback_rates()
+
     try:
         rd.open_session()  # Auto-reads config file
         df = rd.get_data(["EUR=", "EURMDL=R"], fields=["BID", "ASK"])

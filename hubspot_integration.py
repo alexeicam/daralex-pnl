@@ -589,10 +589,23 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
 
 def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = None):
     """
-    Render recent deals log table
+    Render recent deals log table with auto-refresh
     """
     if not hubspot.is_connected:
         return
+
+    # Auto-refresh setup
+    import time
+    current_time = time.time()
+
+    # Initialize last refresh time if not exists
+    if "last_deals_refresh" not in st.session_state:
+        st.session_state.last_deals_refresh = 0
+
+    # Check if auto-refresh is enabled and if 2 minutes (120 seconds) have passed
+    auto_refresh_enabled = st.session_state.get("auto_refresh_enabled", True)
+    time_since_refresh = current_time - st.session_state.last_deals_refresh
+    auto_refresh_needed = auto_refresh_enabled and time_since_refresh > 120  # 2 minutes
 
     if not t:
         t = {
@@ -607,11 +620,16 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
             "stage": "Stage"
         }
 
-    # Load deals if not cached
-    if "recent_deals" not in st.session_state:
-        with st.spinner("Loading recent deals..."):
+    # Load deals if not cached or auto-refresh needed
+    if "recent_deals" not in st.session_state or auto_refresh_needed:
+        refresh_message = "Auto-refreshing deals..." if auto_refresh_needed else "Loading recent deals..."
+        with st.spinner(refresh_message):
             deals = hubspot.get_recent_deals(20)
             st.session_state["recent_deals"] = deals
+            st.session_state.last_deals_refresh = current_time
+
+        if auto_refresh_needed:
+            st.success("🔄 Deals automatically refreshed!")
 
     deals = st.session_state["recent_deals"]
 
@@ -696,12 +714,35 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
             key="deals_editor"
         )
 
+        # Auto-refresh status and countdown
+        if auto_refresh_enabled:
+            next_refresh_in = max(0, 120 - time_since_refresh)
+            if next_refresh_in > 0:
+                minutes = int(next_refresh_in // 60)
+                seconds = int(next_refresh_in % 60)
+                if minutes > 0:
+                    refresh_text = f"{t.get('auto_refresh_in', '🔄 Auto-refresh in')} {minutes}m {seconds}s"
+                else:
+                    refresh_text = f"{t.get('auto_refresh_in', '🔄 Auto-refresh in')} {seconds}s"
+                st.caption(refresh_text)
+
+                # Auto-refresh the page to update countdown every 10 seconds
+                if seconds % 10 == 0 or next_refresh_in < 10:
+                    import time
+                    time.sleep(0.1)  # Small delay to prevent rapid refreshes
+                    st.rerun()
+            else:
+                st.caption(t.get("auto_refreshing", "🔄 Auto-refreshing..."))
+        else:
+            st.caption(t.get("auto_refresh_paused", "⏸️ Auto-refresh paused"))
+
         # Buttons row
-        col_refresh, col_save, col_update = st.columns(3)
+        col_refresh, col_save, col_update, col_auto = st.columns(4)
 
         with col_refresh:
-            if st.button(t.get("refresh_deals", "🔄 Refresh Deals"), key="refresh_deals"):
+            if st.button(t.get("refresh_deals", "🔄 Manual Refresh"), key="refresh_deals"):
                 del st.session_state["recent_deals"]
+                st.session_state.last_deals_refresh = 0  # Reset timer
                 st.rerun()
 
         with col_save:
@@ -717,9 +758,18 @@ def render_deals_log(hubspot: StreamlitHubSpotIntegration, t: Dict[str, str] = N
                     st.success(f"✅ Updated {updated_deals} deals in HubSpot!")
                     # Refresh the deals list
                     del st.session_state["recent_deals"]
+                    st.session_state.last_deals_refresh = 0  # Reset timer
                     st.rerun()
                 else:
                     st.info("No changes detected")
+
+        with col_auto:
+            # Toggle auto-refresh
+            auto_refresh_enabled = st.session_state.get("auto_refresh_enabled", True)
+            button_text = t.get("pause_auto", "⏸️ Pause Auto") if auto_refresh_enabled else t.get("enable_auto", "▶️ Enable Auto")
+            if st.button(button_text, key="toggle_auto"):
+                st.session_state.auto_refresh_enabled = not auto_refresh_enabled
+                st.rerun()
 
 def _get_stage_options(t: Dict[str, str] = None) -> List[str]:
     """Get stage options based on language"""
