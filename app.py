@@ -1,4 +1,13 @@
 import streamlit as st
+
+# Page config - MUST be the first Streamlit command
+st.set_page_config(
+    page_title="DARALEX P&L Calculator",
+    page_icon="🌻",
+    layout="wide",  # Changed to wide for better layout
+    initial_sidebar_state="expanded"  # Show sidebar for enhanced features
+)
+
 import requests
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
@@ -26,15 +35,6 @@ try:
     ENHANCED_MODE = True
 except ImportError:
     ENHANCED_MODE = False
-    st.warning("⚠️ Enhanced features not available. Using basic mode.")
-
-# Page config
-st.set_page_config(
-    page_title="DARALEX P&L Calculator",
-    page_icon="🌻",
-    layout="wide",  # Changed to wide for better layout
-    initial_sidebar_state="expanded"  # Show sidebar for enhanced features
-)
 
 # Initialize enhanced calculator if available
 if ENHANCED_MODE:
@@ -340,6 +340,10 @@ def main():
     # Render sidebar and get settings
     lang, enhanced_mode, show_sensitivity, show_breakdown, page = render_sidebar()
     t = TRANSLATIONS[lang]
+
+    # Show warning if enhanced mode is not available
+    if not ENHANCED_MODE:
+        st.warning("⚠️ Enhanced features not available. Using basic mode.")
 
     # Handle page routing
     if page == "📊 Market Intel":
