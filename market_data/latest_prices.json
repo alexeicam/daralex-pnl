@@ -1,0 +1,265 @@
+{
+  "last_updated": "2025-12-03T21:45:00",
+  "parsing_info": {
+    "file_path": "sample_ukragroconsult_prices.xlsx",
+    "parsed_at": "2025-12-03T21:45:00",
+    "sheets_processed": [
+      {
+        "sheet": "03.12.2025",
+        "records": 15
+      }
+    ],
+    "total_records": 15,
+    "oil_records": 12
+  },
+  "filtered_prices": {
+    "ukraine_fob": [
+      {
+        "date": "2025-12-03",
+        "commodity": "Sunflower Oil",
+        "country": "Ukraine",
+        "delivery_terms": "FOB",
+        "price": 1265,
+        "currency": "USD",
+        "daily_change": 5,
+        "weekly_change": -10,
+        "monthly_change": 45,
+        "source_sheet": "03.12.2025",
+        "source_row": 3
+      },
+      {
+        "date": "2025-12-03",
+        "commodity": "Soybean Oil",
+        "country": "Ukraine",
+        "delivery_terms": "FOB",
+        "price": 1185,
+        "currency": "USD",
+        "daily_change": -8,
+        "weekly_change": 15,
+        "monthly_change": 25,
+        "source_sheet": "03.12.2025",
+        "source_row": 5
+      }
+    ],
+    "russia_fob": [
+      {
+        "date": "2025-12-03",
+        "commodity": "Sunflower Oil",
+        "country": "Russia",
+        "delivery_terms": "FOB",
+        "price": 1245,
+        "currency": "USD",
+        "daily_change": 3,
+        "weekly_change": -15,
+        "monthly_change": 35,
+        "source_sheet": "03.12.2025",
+        "source_row": 7
+      }
+    ],
+    "europe_prices": [
+      {
+        "date": "2025-12-03",
+        "commodity": "Sunflower Oil",
+        "country": "Europe Six ports",
+        "delivery_terms": "FOB",
+        "price": 1380,
+        "currency": "USD",
+        "daily_change": 8,
+        "weekly_change": -5,
+        "monthly_change": 65,
+        "source_sheet": "03.12.2025",
+        "source_row": 9
+      },
+      {
+        "date": "2025-12-03",
+        "commodity": "Soybean Oil",
+        "country": "Europe",
+        "delivery_terms": "CIF",
+        "price": 1320,
+        "currency": "USD",
+        "daily_change": -5,
+        "weekly_change": 20,
+        "monthly_change": 55,
+        "source_sheet": "03.12.2025",
+        "source_row": 11
+      }
+    ],
+    "argentina_prices": [
+      {
+        "date": "2025-12-03",
+        "commodity": "Soybean Oil",
+        "country": "Argentina",
+        "delivery_terms": "FOB",
+        "price": 1145,
+        "currency": "USD",
+        "daily_change": -12,
+        "weekly_change": 8,
+        "monthly_change": 18,
+        "source_sheet": "03.12.2025",
+        "source_row": 13
+      }
+    ],
+    "malaysia_palm": [
+      {
+        "date": "2025-12-03",
+        "commodity": "Palm Oil",
+        "country": "Malaysia",
+        "delivery_terms": "FOB",
+        "price": 1095,
+        "currency": "USD",
+        "daily_change": 6,
+        "weekly_change": 12,
+        "monthly_change": 28,
+        "source_sheet": "03.12.2025",
+        "source_row": 15
+      }
+    ],
+    "arbitrage_opportunities": [
+      {
+        "type": "Ukraine_to_Europe",
+        "commodity": "Sunflower Oil",
+        "ukraine_price": 1265,
+        "europe_price": 1380,
+        "spread": 115,
+        "margin_pct": 9.1,
+        "recommendation": "Consider buying Ukraine origin for EU sales"
+      },
+      {
+        "type": "Ukraine_vs_Russia",
+        "commodity": "Sunflower Oil",
+        "ukraine_price": 1265,
+        "russia_price": 1245,
+        "ukraine_premium": 20,
+        "competitive_status": "Competitive"
+      }
+    ]
+  },
+  "raw_prices": [
+    {
+      "date": "2025-12-03",
+      "commodity": "Sunflower Oil",
+      "country": "Ukraine",
+      "delivery_terms": "FOB",
+      "price": 1265,
+      "currency": "USD",
+      "daily_change": 5,
+      "weekly_change": -10,
+      "monthly_change": 45,
+      "source_sheet": "03.12.2025",
+      "source_row": 3
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Soybean Oil",
+      "country": "Ukraine",
+      "delivery_terms": "FOB",
+      "price": 1185,
+      "currency": "USD",
+      "daily_change": -8,
+      "weekly_change": 15,
+      "monthly_change": 25,
+      "source_sheet": "03.12.2025",
+      "source_row": 5
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Sunflower Oil",
+      "country": "Russia",
+      "delivery_terms": "FOB",
+      "price": 1245,
+      "currency": "USD",
+      "daily_change": 3,
+      "weekly_change": -15,
+      "monthly_change": 35,
+      "source_sheet": "03.12.2025",
+      "source_row": 7
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Sunflower Oil",
+      "country": "Europe Six ports",
+      "delivery_terms": "FOB",
+      "price": 1380,
+      "currency": "USD",
+      "daily_change": 8,
+      "weekly_change": -5,
+      "monthly_change": 65,
+      "source_sheet": "03.12.2025",
+      "source_row": 9
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Soybean Oil",
+      "country": "Europe",
+      "delivery_terms": "CIF",
+      "price": 1320,
+      "currency": "USD",
+      "daily_change": -5,
+      "weekly_change": 20,
+      "monthly_change": 55,
+      "source_sheet": "03.12.2025",
+      "source_row": 11
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Soybean Oil",
+      "country": "Argentina",
+      "delivery_terms": "FOB",
+      "price": 1145,
+      "currency": "USD",
+      "daily_change": -12,
+      "weekly_change": 8,
+      "monthly_change": 18,
+      "source_sheet": "03.12.2025",
+      "source_row": 13
+    },
+    {
+      "date": "2025-12-03",
+      "commodity": "Palm Oil",
+      "country": "Malaysia",
+      "delivery_terms": "FOB",
+      "price": 1095,
+      "currency": "USD",
+      "daily_change": 6,
+      "weekly_change": 12,
+      "monthly_change": 28,
+      "source_sheet": "03.12.2025",
+      "source_row": 15
+    }
+  ],
+  "summary": {
+    "total_records": 7,
+    "unique_commodities": 3,
+    "unique_countries": 5,
+    "date_range": {
+      "earliest": "2025-12-03",
+      "latest": "2025-12-03"
+    },
+    "commodities": {
+      "Sunflower Oil": {
+        "count": 3,
+        "price_range": {
+          "min": 1245,
+          "max": 1380,
+          "avg": 1296.7
+        }
+      },
+      "Soybean Oil": {
+        "count": 3,
+        "price_range": {
+          "min": 1145,
+          "max": 1320,
+          "avg": 1216.7
+        }
+      },
+      "Palm Oil": {
+        "count": 1,
+        "price_range": {
+          "min": 1095,
+          "max": 1095,
+          "avg": 1095
+        }
+      }
+    }
+  }
+}

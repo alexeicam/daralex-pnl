@@ -117,56 +117,81 @@ class StreamlitHubSpotIntegration:
             st.error(f"Error fetching companies: {str(e)}")
             return []
 
-    def get_contacts(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_contacts(self, max_contacts: int = 1000) -> List[Dict[str, Any]]:
         """
-        Fetch contacts from HubSpot for buyer/seller selection
+        Fetch all contacts from HubSpot using pagination
         """
         if not self.is_connected:
             return []
 
         try:
+            all_contacts = []
             url = f"{self.base_url}/crm/v3/objects/contacts"
-            params = {
-                "limit": limit,
-                "properties": "firstname,lastname,email"
-            }
+            after = None
+            page_size = 100  # HubSpot API maximum per request
 
-            response = requests.get(url, headers=self.headers, params=params, timeout=10)
-            response.raise_for_status()
+            while len(all_contacts) < max_contacts:
+                # Prepare parameters
+                params = {
+                    "limit": min(page_size, max_contacts - len(all_contacts)),
+                    "properties": "firstname,lastname,email"
+                }
 
-            data = response.json()
-            contacts_raw = data.get("results", [])
+                # Add pagination cursor if available
+                if after:
+                    params["after"] = after
 
-            # Format contacts with readable names
-            contacts = []
-            for contact in contacts_raw:
-                props = contact.get("properties", {})
+                # Make API request
+                response = requests.get(url, headers=self.headers, params=params, timeout=15)
+                response.raise_for_status()
 
-                # Build display name
-                first_name = props.get("firstname", "")
-                last_name = props.get("lastname", "")
-                email = props.get("email", "")
+                data = response.json()
+                contacts_raw = data.get("results", [])
 
-                if first_name or last_name:
-                    name = f"{first_name} {last_name}".strip()
-                elif email:
-                    name = email
-                else:
-                    name = f"Contact {contact.get('id')}"
+                if not contacts_raw:
+                    break  # No more contacts
 
-                display_name = name
+                # Process this batch of contacts
+                for contact in contacts_raw:
+                    props = contact.get("properties", {})
 
-                contacts.append({
-                    'id': contact.get('id'),
-                    'name': name,
-                    'display_name': display_name,
-                    'email': email,
-                    'company': "N/A",
-                    'phone': "N/A",
-                    'jobtitle': "N/A"
-                })
+                    # Build display name
+                    first_name = props.get("firstname", "")
+                    last_name = props.get("lastname", "")
+                    email = props.get("email", "")
 
-            return contacts
+                    if first_name or last_name:
+                        name = f"{first_name} {last_name}".strip()
+                    elif email:
+                        name = email
+                    else:
+                        name = f"Contact {contact.get('id')}"
+
+                    display_name = name
+
+                    all_contacts.append({
+                        'id': contact.get('id'),
+                        'name': name,
+                        'display_name': display_name,
+                        'email': email,
+                        'company': "N/A",
+                        'phone': "N/A",
+                        'jobtitle': "N/A"
+                    })
+
+                # Check if there are more pages
+                paging = data.get("paging", {})
+                next_page = paging.get("next", {})
+                after = next_page.get("after")
+
+                if not after:
+                    break  # No more pages
+
+                # Show progress for large datasets
+                if len(all_contacts) % 200 == 0:
+                    st.info(f"📥 Loaded {len(all_contacts)} contacts...")
+
+            return all_contacts
 
         except Exception as e:
             st.error(f"Error fetching contacts: {str(e)}")

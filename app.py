@@ -22,6 +22,7 @@ try:
         display_vanzatori_contacts,
         StreamlitHubSpotIntegration
     )
+    from market_intel import render_market_intelligence_tab
     ENHANCED_MODE = True
 except ImportError:
     ENHANCED_MODE = False
@@ -211,7 +212,7 @@ def render_sidebar():
             st.markdown("### 📄 Pagini")
             page = st.selectbox(
                 "Alege pagina:",
-                ["🏠 Calculator Principal", "👥 Lista Vânzători"],
+                ["🏠 Calculator Principal", "📊 Market Intel", "👥 Lista Vânzători"],
                 key="page_selector"
             )
         else:
@@ -341,6 +342,14 @@ def main():
     t = TRANSLATIONS[lang]
 
     # Handle page routing
+    if page == "📊 Market Intel":
+        # Market Intelligence page
+        if ENHANCED_MODE:
+            render_market_intelligence_tab(t)
+        else:
+            st.error("Enhanced mode required for Market Intelligence")
+        return
+
     if page == "👥 Lista Vânzători":
         # Dedicated Vânzători page
         st.title("👥 Lista Vânzători HubSpot")
