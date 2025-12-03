@@ -207,3 +207,11 @@ marimo/_lsp/
 __marimo__/
 
 refinitiv-data.config.json
+
+# OAuth credentials and tokens (security)
+credentials.json
+gmail_token.json
+
+# Files that may contain OAuth secrets (excluded for security)
+download_from_ukragro_sender_with_oauth.py
+oauth_helper_with_oauth.py
