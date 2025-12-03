@@ -631,8 +631,13 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
 
     # Load contacts if not in cache
     if "vanzatori_contacts" not in st.session_state:
-        with st.spinner("Loading Vânzători contacts..."):
-            all_contacts = hubspot.get_contacts()
+        with st.spinner("Loading all contacts from HubSpot..."):
+            # Fetch all contacts (up to 1000 by default)
+            all_contacts = hubspot.get_contacts(max_contacts=1000)
+
+            # Show loading progress
+            if all_contacts:
+                st.success(f"✅ Successfully loaded {len(all_contacts)} contacts")
 
             # For now, show all contacts since we can't filter by job title
             # TODO: Add custom property for contact role filtering
@@ -677,7 +682,7 @@ def display_vanzatori_contacts(hubspot: StreamlitHubSpotIntegration, t: Dict[str
             hide_index=True
         )
 
-        st.info(f"📊 Total: {len(vanzatori_contacts)} vânzători găsiți")
+        st.info(f"📊 Total: {len(vanzatori_contacts)} contacte găsite")
     else:
         st.warning("Nu s-au găsit date pentru afișare")
 
