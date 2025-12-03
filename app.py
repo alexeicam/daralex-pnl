@@ -46,7 +46,8 @@ TRANSLATIONS = {
         "buying": "BUYING (Backwardation)",
         "selling": "SELLING (Forwardation)",
         "market_price": "Market Price (EUR/t)",
-        "supplier_price": "Supplier Price (USD/t)",
+        "supplier_price": "Supplier Price",
+        "supplier_currency": "Supplier Currency",
         "target_profit": "Target Profit (EUR/t)",
         "quantity": "Quantity (tons)",
         "transport": "Transport (USD/t)",
@@ -118,7 +119,8 @@ TRANSLATIONS = {
         "buying": "CUMPĂRARE (Backwardation)",
         "selling": "VÂNZARE (Forwardation)",
         "market_price": "Preț Piață (EUR/t)",
-        "supplier_price": "Preț Furnizor (USD/t)",
+        "supplier_price": "Preț Furnizor",
+        "supplier_currency": "Moneda Furnizor",
         "target_profit": "Profit Țintă (EUR/t)",
         "quantity": "Cantitate (tone)",
         "transport": "Transport (USD/t)",
@@ -259,11 +261,16 @@ def calculate_backwardation(market_price_eur, target_profit_eur, eur_usd, eur_md
         profit_per_truck=profit_per_truck, total_profit=total_profit, margin_pct=margin_pct
     )
 
-def calculate_forwardation(supplier_price_usd, target_profit_eur, eur_usd, eur_mdl,
+def calculate_forwardation(supplier_price, supplier_currency, target_profit_eur, eur_usd, eur_mdl,
                          transport_usd, loss_kg, broker_eur, customs_eur, quantity_t, vat_rate):
-    """Your existing forwardation calculation"""
-    # [Your existing calculation logic - keeping it exactly as is]
-    supplier_price_eur = supplier_price_usd / eur_usd
+    """Enhanced forwardation calculation supporting USD and EUR supplier prices"""
+
+    # Convert supplier price to EUR if needed
+    if supplier_currency == "USD":
+        supplier_price_eur = supplier_price / eur_usd
+    else:  # EUR
+        supplier_price_eur = supplier_price
+
     transport_eur = transport_usd / eur_usd
 
     total_cost_eur = supplier_price_eur + transport_eur + broker_eur + customs_eur
@@ -338,8 +345,24 @@ def main():
         # Price input (different for buying vs selling)
         if is_buying:
             price = st.number_input(t["market_price"], min_value=0.0, value=1310.0, step=10.0)
+            supplier_currency = "EUR"  # Not used for buying
         else:
-            price = st.number_input(t["supplier_price"], min_value=0.0, value=1225.0, step=10.0)
+            col_price, col_currency = st.columns([3, 1])
+            with col_currency:
+                supplier_currency = st.selectbox(
+                    t["supplier_currency"],
+                    ["USD", "EUR"],
+                    key="supplier_currency_selector"
+                )
+            with col_price:
+                currency_symbol = "$" if supplier_currency == "USD" else "€"
+                default_price = 1225.0 if supplier_currency == "USD" else 1052.0
+                price = st.number_input(
+                    f"{t['supplier_price']} ({currency_symbol}/t)",
+                    min_value=0.0,
+                    value=default_price,
+                    step=10.0
+                )
 
         # Common inputs
         target_profit = st.number_input(t["target_profit"], min_value=0.0, value=85.0, step=5.0)
@@ -408,15 +431,21 @@ def main():
                     # Use your existing calculation
                     result = calculate_backwardation(price, **{k: v for k, v in calc_params.items() if k not in ["market_price_eur", "calculation_type"]})
             else:
-                calc_params["supplier_price_usd"] = price
+                calc_params["supplier_price"] = price
+                calc_params["supplier_currency"] = supplier_currency
                 calc_params["calculation_type"] = "forwardation"
 
                 if enhanced_mode:
                     # Filter parameters for enhanced calculator
                     enhanced_params = {k: v for k, v in calc_params.items() if k != "calculation_type"}
-                    result = enhanced_calculator.calculate_enhanced_forwardation(**enhanced_params)
+                    # Convert for enhanced calculator (still expects USD)
+                    if supplier_currency == "EUR":
+                        enhanced_params["supplier_price_usd"] = price * eur_usd
+                    else:
+                        enhanced_params["supplier_price_usd"] = price
+                    result = enhanced_calculator.calculate_enhanced_forwardation(**{k: v for k, v in enhanced_params.items() if k not in ["supplier_price", "supplier_currency"]})
                 else:
-                    result = calculate_forwardation(price, **{k: v for k, v in calc_params.items() if k not in ["supplier_price_usd", "calculation_type"]})
+                    result = calculate_forwardation(**{k: v for k, v in calc_params.items() if k != "calculation_type"})
 
             # Store results in session state
             st.session_state.last_result = result
