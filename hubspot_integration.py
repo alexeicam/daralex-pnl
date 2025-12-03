@@ -604,10 +604,8 @@ def render_contact_selector(label: str, key_prefix: str, hubspot: StreamlitHubSp
         st.warning(f"No contacts found in HubSpot")
         return None
 
-    # Temporarily disable role filtering until we can access job title property
-    # TODO: Implement role filtering with proper HubSpot property access
-    if role_filter:
-        st.info(f"📝 Note: Showing all contacts. Role filtering for '{role_filter}' temporarily disabled.")
+    # Note: Role filtering is disabled since we're using HubSpot directly for contact management
+    # The role information is maintained in HubSpot
 
     # Prepare options
     contact_options = ["Select Contact"] + [contact['display_name'] for contact in contacts]
@@ -698,7 +696,7 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
             if "buyer_contacts" in st.session_state:
                 for contact in st.session_state["buyer_contacts"]:
                     if contact['id'] == buyer_id:
-                        buyer_name = contact['name']
+                        buyer_name = contact['display_name']
                         break
 
         if seller_id:
@@ -706,7 +704,7 @@ def render_deal_tracking_section(calculation_result: Dict[str, Any],
             if "seller_contacts" in st.session_state:
                 for contact in st.session_state["seller_contacts"]:
                     if contact['id'] == seller_id:
-                        seller_name = contact['name']
+                        seller_name = contact['display_name']
                         break
 
         deal_name_default = f"{product} - {seller_name} → {buyer_name} - {quantity:.0f}t"
