@@ -128,8 +128,7 @@ class StreamlitHubSpotIntegration:
             url = f"{self.base_url}/crm/v3/objects/contacts"
             params = {
                 "limit": limit,
-                "properties": "firstname,lastname,email,company,phone,jobtitle",
-                "sorts": [{"propertyName": "lastmodifieddate", "direction": "DESCENDING"}]
+                "properties": "firstname,lastname,email,company,phone,jobtitle"
             }
 
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
